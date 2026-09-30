@@ -236,8 +236,51 @@ Check the Lambda execution logs in CloudWatch and confirm that the expected log 
 
 ## 📸 Project Screenshots
 
-Add your project screenshots under:
+The following screenshots demonstrate the complete implementation and validation of the AWS EC2 log automation workflow.
 
+### 1. EC2 Instance
+
+![EC2 Instance](docs/screenshots/ec2-instance.jpg)
+
+### 2. CloudWatch Agent
+
+![CloudWatch Agent](docs/screenshots/cloudwatch-agent.jpg)
+
+### 3. CloudWatch Log Group
+
+![CloudWatch Log Group](docs/screenshots/cloudwatch-log-group.jpg)
+
+### 4. CloudWatch Log Stream
+
+![CloudWatch Log Stream](docs/screenshots/cloudwatch-log-stream.jpg)
+
+### 5. Lambda Function Test
+
+![Lambda Test](docs/screenshots/lambda-test.jpg)
+
+### 6. EventBridge Rule
+
+![EventBridge Rule](docs/screenshots/eventbridge-rule.jpg)
+
+### 7. S3 Bucket Policy
+
+![S3 Bucket Policy](docs/screenshots/s3-bucket-policy.jpg)
+
+### 8. Logs Uploaded to S3
+
+![Logs Uploaded to S3](docs/screenshots/logs-uploaded-to-s3.jpg)
+
+### 9. Logs Updated to S3 from Lambda
+
+![Logs Updated to S3 from Lambda](docs/screenshots/logs-updated-to-s3-from-lambda.jpg)
+
+### 10. Log File Inside S3
+
+![Log File Inside S3](docs/screenshots/log-file-inside-s3.jpg)
+
+### 11. Logs Downloaded from S3
+
+![Logs Downloaded from S3](docs/screenshots/logs-downloaded-from-s3.jpg)
 ```text
 docs/screenshots/
 ```
