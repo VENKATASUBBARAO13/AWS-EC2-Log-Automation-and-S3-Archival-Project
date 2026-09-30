@@ -1,12 +1,14 @@
-# ☁️ AWS Serverless Log Automation Pipeline
+# ☁️ AWS EC2 Log Automation & S3 Archival Project
 
-A hands-on AWS serverless project that automates the collection, processing, and centralized storage of EC2 application/server logs using Amazon CloudWatch Logs, AWS Lambda, Amazon S3, AWS IAM, and Amazon EventBridge.
+A hands-on AWS project that automates the collection and archival of application/server logs from Amazon EC2 to Amazon S3 using Amazon CloudWatch Logs, AWS Lambda, IAM, and Amazon EventBridge.
 
 ## 📌 Project Overview
 
-This project demonstrates how server logs generated on an Amazon EC2 instance can be collected by the CloudWatch Agent, made available through CloudWatch Logs, processed by a serverless AWS Lambda function, and archived into an Amazon S3 bucket.
+This project demonstrates an automated workflow for collecting logs generated on an Amazon EC2 instance using the CloudWatch Agent.
 
-The project focuses on building a simple, event-driven and serverless log automation workflow without maintaining a dedicated log-processing server.
+The logs are delivered to Amazon CloudWatch Logs, where they can be monitored and processed. AWS Lambda is used to automate the log processing and archival workflow, with Amazon S3 used as the centralized storage location for long-term log retention.
+
+The project focuses on building a simple, event-driven AWS log automation workflow without requiring a dedicated log-processing server.
 
 ## 🏗️ Architecture
 
