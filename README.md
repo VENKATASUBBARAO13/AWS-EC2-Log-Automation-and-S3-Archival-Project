@@ -66,7 +66,206 @@ Amazon S3
 - CloudWatch Logs export to S3
 - Troubleshooting a multi-service AWS workflow
 
-## 📂 Repository Structure
+## 🖥️ Application Layer Reference
+
+This repository also contains a small Flask + HTML application layer used to demonstrate an EC2 frontend/backend deployment alongside the AWS log-automation workflow.
+
+### Backend Files
+
+- `backend/app.py` — Flask REST API
+- `backend/requirements.txt` — Python dependencies
+- `backend/test.sql` — MySQL database and users table
+- `backend/README.md` — backend setup notes
+
+### Frontend Files
+
+- `frontend/index.html` — HTML/CSS/JavaScript user interface
+- `frontend/proxy.conf` — Nginx reverse-proxy configuration
+- `frontend/proxy-process.md` — frontend-to-backend request flow
+- `frontend/README.md` — frontend deployment notes
+
+## 🔗 Frontend → Backend → RDS Flow
+
+```text
+User Browser
+     │
+     ▼
+Frontend EC2
+   Nginx
+     │
+     │ /users
+     ▼
+Backend EC2
+   Flask API
+     │
+     ▼
+Amazon RDS MySQL
+```
+
+The frontend uses relative API paths such as `/users`. Nginx serves the frontend and proxies API requests to the private backend.
+
+## 🐍 Backend Code
+
+The repository includes the complete Flask API in `backend/app.py`.
+
+Main API routes:
+
+```python
+@app.route("/users", methods=["GET"])
+def get_users():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM users")
+        return jsonify(cursor.fetchall())
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/users/add", methods=["POST"])
+def add_user():
+    data = request.get_json(silent=True) or {}
+    name = data.get("name")
+    email = data.get("email")
+
+    if not name or not email:
+        return jsonify({"error": "Name and Email are required"}), 400
+
+    # Insert user into Amazon RDS MySQL
+    ...
+
+
+@app.route("/users/update/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
+    ...
+
+
+@app.route("/users/delete/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    ...
+```
+
+### Backend Dependencies
+
+```text
+Flask
+flask-cors
+mysql-connector-python
+boto3
+```
+
+### Database Schema
+
+```sql
+CREATE DATABASE IF NOT EXISTS dev;
+USE dev;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE
+);
+```
+
+> **Security:** The repository uses placeholders such as `YOUR_RDS_ENDPOINT`, `YOUR_DB_USER`, and `YOUR_DB_PASSWORD`. Do not commit real database credentials or AWS secrets.
+
+## 🌐 Frontend Code
+
+The frontend is implemented in `frontend/index.html` using HTML, CSS, and JavaScript.
+
+Example API calls:
+
+```javascript
+const API_BASE = "";
+
+fetch(API_BASE + "/users")
+  .then(response => response.json())
+  .then(users => {
+      console.log(users);
+  });
+
+
+fetch(API_BASE + "/users/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+        name: "John Doe",
+        email: "john@example.com"
+    })
+});
+```
+
+The frontend supports:
+
+- Listing users
+- Adding users
+- Updating users
+- Deleting users
+- Displaying basic user statistics
+
+## 🔁 Nginx Reverse Proxy
+
+The Nginx configuration is stored in `frontend/proxy.conf`.
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    location /users {
+        proxy_pass http://BACKEND_PRIVATE_IP:5000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+Replace `BACKEND_PRIVATE_IP` with the private backend address or internal load-balancer DNS name used in your AWS environment.
+
+## 🚀 Application Deployment
+
+### Backend EC2
+
+```bash
+sudo yum update -y
+sudo yum install python3 -y
+
+cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+python app.py
+```
+
+### Frontend EC2
+
+```bash
+sudo yum install nginx -y
+
+sudo cp frontend/index.html /usr/share/nginx/html/index.html
+sudo cp frontend/proxy.conf /etc/nginx/conf.d/reverse-proxy.conf
+
+sudo nginx -t
+sudo systemctl enable nginx
+sudo systemctl restart nginx
+```
+
+For a production deployment, keep the backend private and expose only the required frontend/load-balancer endpoint.
+
+# 📂 Repository Structure
 
 ```text
 AWS-EC2-Log-Automation-and-S3-Archival-Project/
