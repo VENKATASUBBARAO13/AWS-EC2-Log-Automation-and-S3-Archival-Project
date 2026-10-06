@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS UserFlow</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #eef2f7;
+      margin: 0;
+      padding: 40px;
+      color: #2c3e50;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { display:flex; align-items:center; gap:14px; margin-bottom:25px; }
+    .header img { width:55px; height:55px; object-fit:contain; }
+    h1 { margin:0; }
+    .card {
+      background:#fff;
+      border-radius:10px;
+      padding:22px;
+      margin-bottom:24px;
+      box-shadow:0 4px 12px rgba(0,0,0,.08);
+    }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .stat { background:#f8fafc; border-radius:8px; padding:16px; }
+    .stat strong { display:block; font-size:28px; margin-top:6px; }
+    table { width:100%; border-collapse:collapse; margin-top:16px; }
+    th, td { padding:12px; border-bottom:1px solid #e5e7eb; text-align:left; }
+    th { background:#2980b9; color:#fff; }
+    input { padding:10px; margin:0 8px 10px 0; min-width:220px; }
+    button { padding:9px 14px; border:0; border-radius:5px; color:#fff; cursor:pointer; }
+    .primary { background:#2980b9; }
+    .success { background:#27ae60; }
+    .warning { background:#f39c12; }
+    .danger { background:#e74c3c; }
+    .message { margin-top:12px; font-weight:600; }
+    @media (max-width: 700px) {
+      .stats { grid-template-columns:1fr; }
+      body { padding:20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png" alt="AWS">
+      <div>
+        <h1>AWS UserFlow</h1>
+        <p>EC2 → Nginx → Flask API → Amazon RDS</p>
+      </div>
+    </div>
+
+    <div class="card stats">
+      <div class="stat">Total Users<strong id="totalUsers">0</strong></div>
+      <div class="stat">Active Users<strong id="activeUsers">0</strong></div>
+      <div class="stat">Email Accounts<strong id="emailAccounts">0</strong></div>
+    </div>
+
+    <div class="card">
+      <h2>Users</h2>
+      <button class="primary" onclick="loadUsers()">Refresh Users</button>
+      <table id="userTable">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Email</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Add User</h2>
+      <form id="userForm">
+        <input id="name" type="text" placeholder="Enter Name" required>
+        <input id="email" type="email" placeholder="Enter Email" required>
+        <button class="success" type="submit">Add User</button>
+      </form>
+      <div id="formMsg" class="message"></div>
+    </div>
+  </div>
+
+  <script>
+    // Keep empty when Nginx reverse-proxies /users to the private backend.
+    const API_BASE = "";
+
+    async function loadUsers() {
+      try {
+        const res = await fetch(API_BASE + "/users");
+        const users = await res.json();
+
+        const tbody = document.querySelector("#userTable tbody");
+        tbody.innerHTML = "";
+
+        users.forEach(user => {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = user.id;
+          row.insertCell(1).textContent = user.name;
+          row.insertCell(2).textContent = user.email;
+
+          const actions = row.insertCell(3);
+
+          const editBtn = document.createElement("button");
+          editBtn.className = "warning";
+          editBtn.textContent = "Edit";
+          editBtn.onclick = () => updateUser(user.id, user.name, user.email);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "danger";
+          deleteBtn.style.marginLeft = "8px";
+          deleteBtn.textContent = "Delete";
+          deleteBtn.onclick = () => deleteUser(user.id);
+
+          actions.appendChild(editBtn);
+          actions.appendChild(deleteBtn);
+        });
+
+        document.getElementById("totalUsers").textContent = users.length;
+        document.getElementById("activeUsers").textContent = users.length;
+        document.getElementById("emailAccounts").textContent = users.length;
+      } catch (err) {
+        showMessage("Unable to load users: " + err.message);
+      }
+    }
+
+    async function updateUser(id, currentName, currentEmail) {
+      const name = prompt("Enter updated name:", currentName);
+      if (name === null) return;
+
+      const email = prompt("Enter updated email:", currentEmail);
+      if (email === null) return;
+
+      try {
+        const res = await fetch(API_BASE + "/users/update/" + id, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email })
+        });
+        const result = await res.json();
+        showMessage(result.message || result.error);
+        loadUsers();
+      } catch (err) {
+        showMessage("Update failed: " + err.message);
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm("Delete this user?")) return;
+
+      try {
+        const res = await fetch(API_BASE + "/users/delete/" + id, {
+          method: "DELETE"
+        });
+        const result = await res.json();
+        showMessage(result.message || result.error);
+        loadUsers();
+      } catch (err) {
+        showMessage("Delete failed: " + err.message);
+      }
+    }
+
+    document.getElementById("userForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+
+      try {
+        const res = await fetch(API_BASE + "/users/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email })
+        });
+
+        const result = await res.json();
+        showMessage(result.message || result.error);
+        document.getElementById("userForm").reset();
+        loadUsers();
+      } catch (err) {
+        showMessage("Add user failed: " + err.message);
+      }
+    });
+
+    function showMessage(message) {
+      document.getElementById("formMsg").textContent = message;
+    }
+
+    loadUsers();
+  </script>
+</body>
+</html>
